@@ -1,0 +1,41 @@
+@Drive_Car_Solutions_API_HostAddress = http://localhost:5266
+
+### 1. Create a Customer
+POST {{Drive_Car_Solutions_API_HostAddress}}/api/customers/
+Content-Type: application/json
+
+{
+  "fullName": "John Doe",
+  "phone": "+1-555-012-3456",
+  "address": "123 Main Street, Cityville, State 12345"
+}
+
+### 2. Create a Vehicle
+POST {{Drive_Car_Solutions_API_HostAddress}}/api/vehicles/
+Content-Type: application/json
+
+{
+  "carName": "Toyota Camry",
+  "plateNumber": "ABC-1234",
+  "model": "2023 LE",
+  "customerId": 1
+}
+
+### 3. Create a Service Type (Optional, as you seeded 6 already)
+POST {{Drive_Car_Solutions_API_HostAddress}}/api/servicetypes/
+Content-Type: application/json
+
+{
+  "serviceName": "Full Detailing"
+}
+
+### 4. Create a Vehicle Service Record
+POST {{Drive_Car_Solutions_API_HostAddress}}/api/vehicleservices/
+Content-Type: application/json
+
+{
+  "vehicleId": 1,
+  "serviceTypeId": 1,
+  "serviceDate": "2026-05-18T10:30:00Z",
+  "price": 49.99
+}

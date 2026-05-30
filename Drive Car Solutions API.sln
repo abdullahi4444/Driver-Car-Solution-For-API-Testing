@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36915.13 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Drive Car Solutions API", "Drive Car Solutions API\Drive Car Solutions API.csproj", "{34CDE978-197F-4160-87EC-BB60D418A449}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{34CDE978-197F-4160-87EC-BB60D418A449}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{34CDE978-197F-4160-87EC-BB60D418A449}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{34CDE978-197F-4160-87EC-BB60D418A449}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{34CDE978-197F-4160-87EC-BB60D418A449}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0AD0EE3C-B2B8-4F9A-8B3B-9FE05C20D64B}
+	EndGlobalSection
+EndGlobal
