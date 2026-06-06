@@ -3,27 +3,40 @@ using Drive_Car_Solutions_API.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Drive_Car_Solutions_API.Authorization;
+using System.Security.Claims;
 
 namespace Drive_Car_Solutions_API.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class Customers : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IAuthorizationService _authorizationService;
 
-        public Customers(AppDbContext context)
+        public Customers(AppDbContext context, IAuthorizationService authorizationService)
         {
             _context = context;
+            _authorizationService = authorizationService;
         }
 
         // GET: api/customers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<CustomersModel>>> GetCustomers()
         {
-            return await _context.Customers
+            var query = _context.Customers
                 .Include(c => c.Vehicles)
-                .ToListAsync();
+                .AsQueryable();
+
+            if (!User.IsInRole("Admin"))
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                query = query.Where(c => c.ApplicationUserId == userId);
+            }
+
+            return await query.ToListAsync();
         }
 
         // GET: api/customers/5
@@ -39,6 +52,11 @@ namespace Drive_Car_Solutions_API.Controllers
                 return NotFound(new { message = $"Customer with ID {id} not found." });
             }
 
+            if (!User.IsInRole("Admin") && customer.ApplicationUserId != User.FindFirstValue(ClaimTypes.NameIdentifier))
+            {
+                return Forbid();
+            }
+
             return customer;
         }
 
@@ -51,6 +69,7 @@ namespace Drive_Car_Solutions_API.Controllers
                 return BadRequest(ModelState);
             }
 
+            customer.ApplicationUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             _context.Customers.Add(customer);
             await _context.SaveChangesAsync();
 
@@ -70,6 +89,12 @@ namespace Drive_Car_Solutions_API.Controllers
             if (existingCustomer == null)
             {
                 return NotFound(new { message = $"Customer with ID {id} not found." });
+            }
+
+            var authorizationResult = await _authorizationService.AuthorizeAsync(User, existingCustomer, new SameOwnerRequirement());
+            if (!authorizationResult.Succeeded)
+            {
+                return Forbid();
             }
 
             // Update properties
@@ -95,13 +120,18 @@ namespace Drive_Car_Solutions_API.Controllers
 
         // DELETE: api/customers/5
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteCustomer(int id)
         {
             var customer = await _context.Customers.FindAsync(id);
             if (customer == null)
             {
                 return NotFound(new { message = $"Customer with ID {id} not found." });
+            }
+
+            var authorizationResult = await _authorizationService.AuthorizeAsync(User, customer, new SameOwnerRequirement());
+            if (!authorizationResult.Succeeded)
+            {
+                return Forbid();
             }
 
             _context.Customers.Remove(customer);

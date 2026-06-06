@@ -22,6 +22,8 @@ namespace Drive_Car_Solutions_API.Data
 
         public DbSet<VehiclesServicesTypes> VehicleServices { get; set; } = null!;
 
+        public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

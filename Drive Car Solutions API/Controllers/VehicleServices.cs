@@ -3,28 +3,41 @@ using Drive_Car_Solutions_API.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Drive_Car_Solutions_API.Authorization;
+using System.Security.Claims;
 
 namespace Drive_Car_Solutions_API.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class VehicleServices : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IAuthorizationService _authorizationService;
 
-        public VehicleServices(AppDbContext context)
+        public VehicleServices(AppDbContext context, IAuthorizationService authorizationService)
         {
             _context = context;
+            _authorizationService = authorizationService;
         }
 
         // GET: api/vehicleservices
         [HttpGet]
         public async Task<ActionResult<IEnumerable<VehiclesServicesTypes>>> GetVehicleServices()
         {
-            return await _context.VehicleServices
+            var query = _context.VehicleServices
                 .Include(vs => vs.Vehicle)
                 .Include(vs => vs.ServiceType)
-                .ToListAsync();
+                .AsQueryable();
+
+            if (!User.IsInRole("Admin"))
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                query = query.Where(vs => vs.ApplicationUserId == userId);
+            }
+
+            return await query.ToListAsync();
         }
 
         // GET: api/vehicleservices/5
@@ -41,6 +54,11 @@ namespace Drive_Car_Solutions_API.Controllers
                 return NotFound(new { message = $"Vehicle Service with ID {id} not found." });
             }
 
+            if (!User.IsInRole("Admin") && vehicleService.ApplicationUserId != User.FindFirstValue(ClaimTypes.NameIdentifier))
+            {
+                return Forbid();
+            }
+
             return vehicleService;
         }
 
@@ -48,10 +66,17 @@ namespace Drive_Car_Solutions_API.Controllers
         [HttpGet("vehicle/{vehicleId}")]
         public async Task<ActionResult<IEnumerable<VehiclesServicesTypes>>> GetServicesByVehicle(int vehicleId)
         {
-            var vehicleServices = await _context.VehicleServices
+            var query = _context.VehicleServices
                 .Include(vs => vs.ServiceType)
-                .Where(vs => vs.VehicleId == vehicleId)
-                .ToListAsync();
+                .Where(vs => vs.VehicleId == vehicleId);
+
+            if (!User.IsInRole("Admin"))
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                query = query.Where(vs => vs.ApplicationUserId == userId);
+            }
+
+            var vehicleServices = await query.ToListAsync();
 
             if (!vehicleServices.Any())
             {
@@ -84,6 +109,7 @@ namespace Drive_Car_Solutions_API.Controllers
                 return BadRequest(new { message = $"Service Type with ID {vehicleService.ServiceTypeId} does not exist." });
             }
 
+            vehicleService.ApplicationUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             _context.VehicleServices.Add(vehicleService);
             await _context.SaveChangesAsync();
 
@@ -103,6 +129,12 @@ namespace Drive_Car_Solutions_API.Controllers
             if (existingService == null)
             {
                 return NotFound(new { message = $"Vehicle Service with ID {id} not found." });
+            }
+
+            var authorizationResult = await _authorizationService.AuthorizeAsync(User, existingService, new SameOwnerRequirement());
+            if (!authorizationResult.Succeeded)
+            {
+                return Forbid();
             }
 
             // Verify vehicle exists if changed
@@ -149,13 +181,18 @@ namespace Drive_Car_Solutions_API.Controllers
 
         // DELETE: api/vehicleservices/5
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteVehicleService(int id)
         {
             var vehicleService = await _context.VehicleServices.FindAsync(id);
             if (vehicleService == null)
             {
                 return NotFound(new { message = $"Vehicle Service with ID {id} not found." });
+            }
+
+            var authorizationResult = await _authorizationService.AuthorizeAsync(User, vehicleService, new SameOwnerRequirement());
+            if (!authorizationResult.Succeeded)
+            {
+                return Forbid();
             }
 
             _context.VehicleServices.Remove(vehicleService);

@@ -68,6 +68,7 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
+builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationHandler, Drive_Car_Solutions_API.Authorization.SameOwnerAuthorizationHandler>();
 
 // CORS (for frontend)
 builder.Services.AddCors(options =>

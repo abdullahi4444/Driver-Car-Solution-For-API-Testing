@@ -3,27 +3,40 @@ using Drive_Car_Solutions_API.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Drive_Car_Solutions_API.Authorization;
+using System.Security.Claims;
 
 namespace Drive_Car_Solutions_API.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class ServiceTypes : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IAuthorizationService _authorizationService;
 
-        public ServiceTypes(AppDbContext context)
+        public ServiceTypes(AppDbContext context, IAuthorizationService authorizationService)
         {
             _context = context;
+            _authorizationService = authorizationService;
         }
 
         // GET: api/servicetypes
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ServicesTypesModel>>> GetServiceTypes()
         {
-            return await _context.ServiceTypes
+            var query = _context.ServiceTypes
                 .Include(s => s.VehicleServices)
-                .ToListAsync();
+                .AsQueryable();
+
+            if (!User.IsInRole("Admin"))
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                query = query.Where(s => s.ApplicationUserId == userId);
+            }
+
+            return await query.ToListAsync();
         }
 
         // GET: api/servicetypes/5
@@ -37,6 +50,11 @@ namespace Drive_Car_Solutions_API.Controllers
             if (serviceType == null)
             {
                 return NotFound(new { message = $"Service Type with ID {id} not found." });
+            }
+
+            if (!User.IsInRole("Admin") && serviceType.ApplicationUserId != User.FindFirstValue(ClaimTypes.NameIdentifier))
+            {
+                return Forbid();
             }
 
             return serviceType;
@@ -60,6 +78,7 @@ namespace Drive_Car_Solutions_API.Controllers
                 return BadRequest(new { message = $"Service '{serviceType.ServiceName}' already exists." });
             }
 
+            serviceType.ApplicationUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             _context.ServiceTypes.Add(serviceType);
             await _context.SaveChangesAsync();
 
@@ -79,6 +98,12 @@ namespace Drive_Car_Solutions_API.Controllers
             if (existingService == null)
             {
                 return NotFound(new { message = $"Service Type with ID {id} not found." });
+            }
+
+            var authorizationResult = await _authorizationService.AuthorizeAsync(User, existingService, new SameOwnerRequirement());
+            if (!authorizationResult.Succeeded)
+            {
+                return Forbid();
             }
 
             // Check if new name conflicts with another service
@@ -112,13 +137,18 @@ namespace Drive_Car_Solutions_API.Controllers
 
         // DELETE: api/servicetypes/5
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteServiceType(int id)
         {
             var serviceType = await _context.ServiceTypes.FindAsync(id);
             if (serviceType == null)
             {
                 return NotFound(new { message = $"Service Type with ID {id} not found." });
+            }
+
+            var authorizationResult = await _authorizationService.AuthorizeAsync(User, serviceType, new SameOwnerRequirement());
+            if (!authorizationResult.Succeeded)
+            {
+                return Forbid();
             }
 
             // Check if service is being used by any vehicle before deleting

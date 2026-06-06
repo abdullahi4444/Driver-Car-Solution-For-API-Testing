@@ -1,8 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 
+using Drive_Car_Solutions_API.Models;
+
 namespace Drive_Car_Solution.Models
 {
-    public class VehiclesServicesTypes
+    public class VehiclesServicesTypes : IOwnedResource
     {
         [Key]
         public int Id { get; set; }
@@ -18,5 +20,7 @@ namespace Drive_Car_Solution.Models
         public DateTime ServiceDate { get; set; }
 
         public decimal Price { get; set; }
+
+        public string? ApplicationUserId { get; set; }
     }
 }

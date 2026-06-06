@@ -1,8 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 
+using Drive_Car_Solutions_API.Models;
+
 namespace Drive_Car_Solution.Models
 {
-    public class CustomersModel
+    public class CustomersModel : IOwnedResource
     {
         [Key]
         public int CustomerId { get; set; }
@@ -17,5 +19,7 @@ namespace Drive_Car_Solution.Models
 
         // Navigation
         public ICollection<VehiclesModel>? Vehicles { get; set; }
+
+        public string? ApplicationUserId { get; set; }
     }
 }

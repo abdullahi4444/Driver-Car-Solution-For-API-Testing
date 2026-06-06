@@ -4,5 +4,6 @@ namespace Drive_Car_Solutions_API.Models
 {
     public class ApplicationUser : IdentityUser
     {
+        public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
     }
 }
